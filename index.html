@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ambient Paragraphs — American Classics</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,400&family=Inter:wght@400;500&display=swap');
+
+  :root{
+    --bg: #14120f;
+    --bg-2: #0d0c0a;
+    --paper: #e8dfce;
+    --paper-dim: #b6ab93;
+    --muted: #6f6a5c;
+    --glow: #c99a4b;
+    --glow-dim: rgba(201,154,75,0.14);
+    --line: #2a2620;
+  }
+
+  *{ box-sizing:border-box; }
+
+  html,body{
+    margin:0;
+    padding:0;
+    height:100%;
+    background:var(--bg);
+    color:var(--paper);
+    font-family:'Inter', -apple-system, sans-serif;
+    overflow:hidden;
+  }
+
+  .room{
+    position:relative;
+    height:100vh;
+    width:100%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:
+      radial-gradient(ellipse 60% 50% at 50% 42%, var(--glow-dim), transparent 70%),
+      var(--bg);
+  }
+
+  .room::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    background: radial-gradient(ellipse 90% 80% at 50% 50%, transparent 40%, var(--bg-2) 100%);
+    pointer-events:none;
+  }
+
+  .screen{
+    position:relative;
+    z-index:1;
+    max-width:640px;
+    width:88%;
+    padding:0 24px;
+    text-align:center;
+  }
+
+  .eyebrow{
+    font-size:11px;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin-bottom:28px;
+    opacity:0.8;
+    transition:opacity 0.6s ease;
+  }
+
+  .paragraph{
+    font-family:'Newsreader', Georgia, serif;
+    font-weight:400;
+    font-size:clamp(19px, 2.6vw, 26px);
+    line-height:1.65;
+    color:var(--paper);
+    letter-spacing:0.001em;
+    min-height:200px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    opacity:1;
+    transition:opacity 0.9s ease;
+  }
+
+  .paragraph.fading{ opacity:0; }
+
+  .paragraph p{ margin:0; }
+
+  .source{
+    margin-top:30px;
+    font-family:'Newsreader', Georgia, serif;
+    font-style:italic;
+    font-size:14px;
+    color:var(--paper-dim);
+    opacity:0.75;
+    transition:opacity 0.6s ease;
+  }
+
+  .source .author{
+    font-style:normal;
+    color:var(--muted);
+  }
+
+  .controls{
+    position:absolute;
+    bottom:36px;
+    left:0;
+    right:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:22px;
+    z-index:2;
+  }
+
+  .progress-track{
+    position:absolute;
+    top:0;
+    left:0;
+    right:0;
+    height:2px;
+    background:var(--line);
+  }
+
+  .progress-fill{
+    height:100%;
+    width:0%;
+    background:var(--glow);
+    opacity:0.55;
+  }
+
+  button.ctrl{
+    background:none;
+    border:1px solid var(--line);
+    color:var(--paper-dim);
+    font-family:'Inter', sans-serif;
+    font-size:12px;
+    letter-spacing:0.06em;
+    padding:9px 16px;
+    border-radius:20px;
+    cursor:pointer;
+    transition:all 0.25s ease;
+  }
+
+  button.ctrl:hover{
+    border-color:var(--glow);
+    color:var(--paper);
+  }
+
+  button.ctrl.keep-reading{
+    border-color:var(--glow);
+    color:var(--glow);
+  }
+
+  button.ctrl.keep-reading:hover{
+    background:var(--glow);
+    color:var(--bg);
+  }
+
+  .stat{
+    position:absolute;
+    top:22px;
+    right:26px;
+    font-size:11px;
+    color:var(--muted);
+    letter-spacing:0.04em;
+    opacity:0.6;
+  }
+
+  .stat span{ color:var(--paper-dim); }
+
+  a.keep-link{ text-decoration:none; }
+
+  @media (max-width: 520px){
+    .controls{ gap:14px; }
+    button.ctrl{ padding:8px 12px; font-size:11px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="room">
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+  <div class="stat">paragraphs kept you here: <span id="keepCount">0</span></div>
+
+  <div class="screen">
+    <div class="eyebrow" id="category">American Classics</div>
+    <div class="paragraph" id="paragraph"><p>Loading…</p></div>
+    <div class="source" id="source">&nbsp;</div>
+  </div>
+
+  <div class="controls">
+    <button class="ctrl" id="playPause">Pause</button>
+    <button class="ctrl" id="skip">Shuffle</button>
+    <a class="keep-link" id="keepLink" href="#" target="_blank" rel="noopener">
+      <button class="ctrl keep-reading" id="keepReading">Keep Reading →</button>
+    </a>
+  </div>
+</div>
+
+<script>
+// ---- Sample dataset -----------------------------------------------------
+// Public-domain paragraphs, American Classics category, for MVP testing only.
+// A production build should pull the full catalog live from Project Gutenberg
+// rather than a hardcoded list like this.
+const PARAGRAPHS = [
+  {
+    text: "Call me Ishmael. Some years ago—never mind how long precisely—having little or no money in my purse, and nothing particular to interest me on shore, I thought I would sail about a little and see the watery part of the world.",
+    title: "Moby-Dick",
+    author: "Herman Melville",
+    gutenberg: "https://www.gutenberg.org/ebooks/2701"
+  },
+  {
+    text: "You don't know about me without you have read a book by the name of The Adventures of Tom Sawyer; but that ain't no matter. That book was made by Mr. Mark Twain, and he told the truth, mainly.",
+    title: "Adventures of Huckleberry Finn",
+    author: "Mark Twain",
+    gutenberg: "https://www.gutenberg.org/ebooks/76"
+  },
+  {
+    text: "A throng of bearded men, in sad-colored garments and grey, steeple-crowned hats, intermixed with women, some wearing hoods, and others bareheaded, was assembled in front of a wooden edifice, the door of which was heavily timbered with oak, and studded with iron spikes.",
+    title: "The Scarlet Letter",
+    author: "Nathaniel Hawthorne",
+    gutenberg: "https://www.gutenberg.org/ebooks/33"
+  },
+  {
+    text: "In my younger and more vulnerable years my father gave me some advice that I've been turning over in my mind ever since. \u201cWhenever you feel like criticizing any one,\u201d he told me, \u201cjust remember that all the people in this world haven't had the advantages that you've had.\u201d",
+    title: "The Great Gatsby",
+    author: "F. Scott Fitzgerald",
+    gutenberg: "https://www.gutenberg.org/ebooks/64317"
+  },
+  {
+    text: "\u201cChristmas won't be Christmas without any presents,\u201d grumbled Jo, lying on the rug. \u201cIt's so dreadful to be poor!\u201d sighed Meg, looking down at her old dress.",
+    title: "Little Women",
+    author: "Louisa May Alcott",
+    gutenberg: "https://www.gutenberg.org/ebooks/514"
+  },
+  {
+    text: "Buck did not read the newspapers, or he would have known that trouble was brewing, not alone for himself, but for every tide-water dog, strong of muscle and with warm, long hair, from Puget Sound to San Diego.",
+    title: "The Call of the Wild",
+    author: "Jack London",
+    gutenberg: "https://www.gutenberg.org/ebooks/215"
+  },
+  {
+    text: "True! —nervous — very, very dreadfully nervous I had been and am; but why will you say that I am mad? The disease had sharpened my senses — not destroyed — not dulled them.",
+    title: "The Tell-Tale Heart",
+    author: "Edgar Allan Poe",
+    gutenberg: "https://www.gutenberg.org/ebooks/2148"
+  },
+  {
+    text: "I went to the woods because I wished to live deliberately, to front only the essential facts of life, and see if I could not learn what it had to teach, and not, when I came to die, discover that I had not lived.",
+    title: "Walden",
+    author: "Henry David Thoreau",
+    gutenberg: "https://www.gutenberg.org/ebooks/205"
+  },
+  {
+    text: "The cold passed reluctantly from the earth, and the retiring fogs revealed an army stretched out on the hills, resting. As the landscape changed from brown to green, the army awakened, and began to tremble with eagerness at the noise of rumors.",
+    title: "The Red Badge of Courage",
+    author: "Stephen Crane",
+    gutenberg: "https://www.gutenberg.org/ebooks/73"
+  }
+];
+
+// ---- State ----------------------------------------------------------------
+let order = [];
+let idx = -1;
+let timer = null;
+let progressTimer = null;
+let playing = true;
+let keepCount = 0;
+const ADVANCE_MS = 14000; // time each paragraph "plays" before shuffling on
+
+const paragraphEl = document.getElementById('paragraph');
+const sourceEl = document.getElementById('source');
+const progressFill = document.getElementById('progressFill');
+const playPauseBtn = document.getElementById('playPause');
+const skipBtn = document.getElementById('skip');
+const keepLink = document.getElementById('keepLink');
+const keepReadingBtn = document.getElementById('keepReading');
+const keepCountEl = document.getElementById('keepCount');
+
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i = a.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function nextIndex(){
+  idx++;
+  if(idx >= order.length){
+    order = shuffle(PARAGRAPHS.map((_, i) => i));
+    // avoid immediate repeat of the last paragraph shown
+    idx = 0;
+  }
+  return order[idx];
+}
+
+function render(){
+  const i = nextIndex();
+  const item = PARAGRAPHS[i];
+
+  paragraphEl.classList.add('fading');
+  sourceEl.style.opacity = 0;
+
+  setTimeout(() => {
+    paragraphEl.innerHTML = '<p>' + item.text + '</p>';
+    sourceEl.innerHTML = item.title + ' — <span class="author">' + item.author + '</span>';
+    keepLink.href = item.gutenberg;
+    paragraphEl.classList.remove('fading');
+    sourceEl.style.opacity = 0.75;
+  }, 500);
+
+  resetProgress();
+}
+
+function resetProgress(){
+  clearInterval(progressTimer);
+  progressFill.style.transition = 'none';
+  progressFill.style.width = '0%';
+  void progressFill.offsetWidth; // force reflow
+  if(playing){
+    progressFill.style.transition = 'width ' + ADVANCE_MS + 'ms linear';
+    progressFill.style.width = '100%';
+  }
+}
+
+function scheduleNext(){
+  clearTimeout(timer);
+  if(playing){
+    timer = setTimeout(() => {
+      render();
+      scheduleNext();
+    }, ADVANCE_MS);
+  }
+}
+
+function start(){
+  order = shuffle(PARAGRAPHS.map((_, i) => i));
+  idx = -1;
+  render();
+  scheduleNext();
+}
+
+playPauseBtn.addEventListener('click', () => {
+  playing = !playing;
+  playPauseBtn.textContent = playing ? 'Pause' : 'Play';
+  if(playing){
+    resetProgress();
+    scheduleNext();
+  } else {
+    clearTimeout(timer);
+    progressFill.style.transition = 'none';
+  }
+});
+
+skipBtn.addEventListener('click', () => {
+  render();
+  if(playing) scheduleNext();
+});
+
+keepReadingBtn.addEventListener('click', () => {
+  keepCount++;
+  keepCountEl.textContent = keepCount;
+});
+
+start();
+</script>
+
+</body>
+</html>
