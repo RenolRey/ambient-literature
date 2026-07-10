@@ -3,371 +3,400 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ambient Paragraphs — American Classics</title>
+<title>Ambient Paragraphs</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,400&family=Inter:wght@400;500&display=swap');
-
-  :root{
-    --bg: #14120f;
-    --bg-2: #0d0c0a;
-    --paper: #e8dfce;
-    --paper-dim: #b6ab93;
-    --muted: #6f6a5c;
-    --glow: #c99a4b;
-    --glow-dim: rgba(201,154,75,0.14);
-    --line: #2a2620;
+  :root {
+    --bg: #0e0d0b;
+    --glow: #d97c3a;
+    --text: #e9e3d6;
+    --text-dim: #9a9284;
+    --line: #2a2722;
+    --serif: 'Noto Serif', 'Liberation Serif', Georgia, 'Times New Roman', serif;
   }
 
-  *{ box-sizing:border-box; }
+  * { box-sizing: border-box; }
 
-  html,body{
-    margin:0;
-    padding:0;
-    height:100%;
-    background:var(--bg);
-    color:var(--paper);
-    font-family:'Inter', -apple-system, sans-serif;
-    overflow:hidden;
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background: var(--bg);
+    font-family: var(--serif);
+    overflow: hidden;
   }
 
-  .room{
-    position:relative;
-    height:100vh;
-    width:100%;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    background:
-      radial-gradient(ellipse 60% 50% at 50% 42%, var(--glow-dim), transparent 70%),
-      var(--bg);
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
   }
 
-  .room::before{
-    content:"";
-    position:absolute;
-    inset:0;
-    background: radial-gradient(ellipse 90% 80% at 50% 50%, transparent 40%, var(--bg-2) 100%);
-    pointer-events:none;
+  /* soft glow behind the text, like light off a screen across a dark room */
+  .glow {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    width: 70vw;
+    height: 70vw;
+    max-width: 900px;
+    max-height: 900px;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(circle, rgba(217,124,58,0.10) 0%, rgba(217,124,58,0.03) 40%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
   }
 
-  .screen{
-    position:relative;
-    z-index:1;
-    max-width:640px;
-    width:88%;
-    padding:0 24px;
-    text-align:center;
+  .stage {
+    position: relative;
+    z-index: 1;
+    width: min(680px, 88vw);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
   }
 
-  .eyebrow{
-    font-size:11px;
-    letter-spacing:0.14em;
-    text-transform:uppercase;
-    color:var(--muted);
-    margin-bottom:28px;
-    opacity:0.8;
-    transition:opacity 0.6s ease;
+  .passage {
+    opacity: 0;
+    transition: opacity 1.1s ease;
   }
 
-  .paragraph{
-    font-family:'Newsreader', Georgia, serif;
-    font-weight:400;
-    font-size:clamp(19px, 2.6vw, 26px);
-    line-height:1.65;
-    color:var(--paper);
-    letter-spacing:0.001em;
-    min-height:200px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    opacity:1;
-    transition:opacity 0.9s ease;
+  .passage.visible {
+    opacity: 1;
   }
 
-  .paragraph.fading{ opacity:0; }
-
-  .paragraph p{ margin:0; }
-
-  .source{
-    margin-top:30px;
-    font-family:'Newsreader', Georgia, serif;
-    font-style:italic;
-    font-size:14px;
-    color:var(--paper-dim);
-    opacity:0.75;
-    transition:opacity 0.6s ease;
+  .passage p {
+    font-size: clamp(1.05rem, 2.4vw, 1.35rem);
+    line-height: 1.7;
+    color: var(--text);
+    margin: 0 0 1.4rem 0;
+    font-weight: 400;
   }
 
-  .source .author{
-    font-style:normal;
-    color:var(--muted);
+  .attribution {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    letter-spacing: 0.02em;
+    margin-bottom: 2.2rem;
   }
 
-  .controls{
-    position:absolute;
-    bottom:36px;
-    left:0;
-    right:0;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    gap:22px;
-    z-index:2;
+  .attribution .book {
+    font-style: italic;
   }
 
-  .progress-track{
-    position:absolute;
-    top:0;
-    left:0;
-    right:0;
-    height:2px;
-    background:var(--line);
+  .progress-track {
+    width: 100%;
+    max-width: 240px;
+    height: 1px;
+    background: var(--line);
+    margin: 0 auto 1.6rem auto;
+    overflow: hidden;
   }
 
-  .progress-fill{
-    height:100%;
-    width:0%;
-    background:var(--glow);
-    opacity:0.55;
+  .progress-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--glow);
+    opacity: 0.55;
   }
 
-  button.ctrl{
-    background:none;
-    border:1px solid var(--line);
-    color:var(--paper-dim);
-    font-family:'Inter', sans-serif;
-    font-size:12px;
-    letter-spacing:0.06em;
-    padding:9px 16px;
-    border-radius:20px;
-    cursor:pointer;
-    transition:all 0.25s ease;
+  .progress-fill.animating {
+    transition-property: width;
+    transition-timing-function: linear;
+    width: 100%;
   }
 
-  button.ctrl:hover{
-    border-color:var(--glow);
-    color:var(--paper);
+  .controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.6rem;
   }
 
-  button.ctrl.keep-reading{
-    border-color:var(--glow);
-    color:var(--glow);
+  .controls button {
+    background: none;
+    border: none;
+    font-family: var(--serif);
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    padding: 0.4rem 0.2rem;
+    transition: color 0.3s ease;
   }
 
-  button.ctrl.keep-reading:hover{
-    background:var(--glow);
-    color:var(--bg);
+  .controls button:hover,
+  .controls button:focus-visible {
+    color: var(--text);
   }
 
-  .stat{
-    position:absolute;
-    top:22px;
-    right:26px;
-    font-size:11px;
-    color:var(--muted);
-    letter-spacing:0.04em;
-    opacity:0.6;
+  a.keep-reading {
+    text-decoration: none;
+    color: var(--glow);
+    border-bottom: 1px solid transparent;
   }
 
-  .stat span{ color:var(--paper-dim); }
+  a.keep-reading:hover,
+  a.keep-reading:focus-visible {
+    border-bottom-color: var(--glow);
+  }
 
-  a.keep-link{ text-decoration:none; }
+  .pace-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.7rem;
+    margin-top: 2rem;
+    opacity: 0.55;
+    transition: opacity 0.3s ease;
+  }
 
-  @media (max-width: 520px){
-    .controls{ gap:14px; }
-    button.ctrl{ padding:8px 12px; font-size:11px; }
+  .pace-row:hover,
+  .pace-row:focus-within {
+    opacity: 0.9;
+  }
+
+  .pace-row label {
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .pace-row input[type="range"] {
+    width: 110px;
+    accent-color: var(--glow);
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .pace-row span {
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    min-width: 2.4em;
+    text-align: left;
+  }
+
+  .counter {
+    position: fixed;
+    top: 1.2rem;
+    right: 1.4rem;
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    opacity: 0.5;
+    letter-spacing: 0.04em;
+    z-index: 2;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .passage, .progress-fill.animating {
+      transition: none;
+    }
   }
 </style>
 </head>
 <body>
 
-<div class="room">
-  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
-  <div class="stat">paragraphs kept you here: <span id="keepCount">0</span></div>
+  <div class="glow"></div>
 
-  <div class="screen">
-    <div class="eyebrow" id="category">American Classics</div>
-    <div class="paragraph" id="paragraph"><p>Loading…</p></div>
-    <div class="source" id="source">&nbsp;</div>
-  </div>
+  <div class="counter" id="counter">continued: 0</div>
 
-  <div class="controls">
-    <button class="ctrl" id="playPause">Pause</button>
-    <button class="ctrl" id="skip">Shuffle</button>
-    <a class="keep-link" id="keepLink" href="#" target="_blank" rel="noopener">
-      <button class="ctrl keep-reading" id="keepReading">Keep Reading →</button>
-    </a>
+  <div class="stage">
+    <div class="progress-track">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+
+    <div class="passage" id="passage">
+      <p id="passageText"></p>
+      <div class="attribution" id="passageAttr"></div>
+    </div>
+
+    <div class="controls">
+      <button id="pauseBtn">Pause</button>
+      <button id="shuffleBtn">Shuffle</button>
+      <a class="keep-reading" id="keepReading" href="#" target="_blank" rel="noopener">Keep Reading &rarr;</a>
+    </div>
+
+    <div class="pace-row">
+      <label for="paceSlider">Pace</label>
+      <input type="range" id="paceSlider" min="12" max="45" step="1" value="22">
+      <span id="paceValue">22s</span>
+    </div>
   </div>
-</div>
 
 <script>
-// ---- Sample dataset -----------------------------------------------------
-// Public-domain paragraphs, American Classics category, for MVP testing only.
-// A production build should pull the full catalog live from Project Gutenberg
-// rather than a hardcoded list like this.
-const PARAGRAPHS = [
-  {
-    text: "Call me Ishmael. Some years ago—never mind how long precisely—having little or no money in my purse, and nothing particular to interest me on shore, I thought I would sail about a little and see the watery part of the world.",
-    title: "Moby-Dick",
-    author: "Herman Melville",
-    gutenberg: "https://www.gutenberg.org/ebooks/2701"
-  },
-  {
-    text: "You don't know about me without you have read a book by the name of The Adventures of Tom Sawyer; but that ain't no matter. That book was made by Mr. Mark Twain, and he told the truth, mainly.",
-    title: "Adventures of Huckleberry Finn",
-    author: "Mark Twain",
-    gutenberg: "https://www.gutenberg.org/ebooks/76"
-  },
-  {
-    text: "A throng of bearded men, in sad-colored garments and grey, steeple-crowned hats, intermixed with women, some wearing hoods, and others bareheaded, was assembled in front of a wooden edifice, the door of which was heavily timbered with oak, and studded with iron spikes.",
-    title: "The Scarlet Letter",
-    author: "Nathaniel Hawthorne",
-    gutenberg: "https://www.gutenberg.org/ebooks/33"
-  },
-  {
-    text: "In my younger and more vulnerable years my father gave me some advice that I've been turning over in my mind ever since. \u201cWhenever you feel like criticizing any one,\u201d he told me, \u201cjust remember that all the people in this world haven't had the advantages that you've had.\u201d",
-    title: "The Great Gatsby",
-    author: "F. Scott Fitzgerald",
-    gutenberg: "https://www.gutenberg.org/ebooks/64317"
-  },
-  {
-    text: "\u201cChristmas won't be Christmas without any presents,\u201d grumbled Jo, lying on the rug. \u201cIt's so dreadful to be poor!\u201d sighed Meg, looking down at her old dress.",
-    title: "Little Women",
-    author: "Louisa May Alcott",
-    gutenberg: "https://www.gutenberg.org/ebooks/514"
-  },
-  {
-    text: "Buck did not read the newspapers, or he would have known that trouble was brewing, not alone for himself, but for every tide-water dog, strong of muscle and with warm, long hair, from Puget Sound to San Diego.",
-    title: "The Call of the Wild",
-    author: "Jack London",
-    gutenberg: "https://www.gutenberg.org/ebooks/215"
-  },
-  {
-    text: "True! —nervous — very, very dreadfully nervous I had been and am; but why will you say that I am mad? The disease had sharpened my senses — not destroyed — not dulled them.",
-    title: "The Tell-Tale Heart",
-    author: "Edgar Allan Poe",
-    gutenberg: "https://www.gutenberg.org/ebooks/2148"
-  },
-  {
-    text: "I went to the woods because I wished to live deliberately, to front only the essential facts of life, and see if I could not learn what it had to teach, and not, when I came to die, discover that I had not lived.",
-    title: "Walden",
-    author: "Henry David Thoreau",
-    gutenberg: "https://www.gutenberg.org/ebooks/205"
-  },
-  {
-    text: "The cold passed reluctantly from the earth, and the retiring fogs revealed an army stretched out on the hills, resting. As the landscape changed from brown to green, the army awakened, and began to tremble with eagerness at the noise of rumors.",
-    title: "The Red Badge of Courage",
-    author: "Stephen Crane",
-    gutenberg: "https://www.gutenberg.org/ebooks/73"
+  // ---- content: hand-picked opening/signature paragraphs, American Classics, public domain ----
+  const PASSAGES = [
+    {
+      book: "Moby-Dick",
+      author: "Herman Melville",
+      text: "Call me Ishmael. Some years ago—never mind how long precisely—having little or no money in my purse, and nothing particular to interest me on shore, I thought I would sail about a little and see the watery part of the world. It is a way I have of driving off the spleen and regulating the circulation.",
+      url: "https://www.gutenberg.org/ebooks/2701"
+    },
+    {
+      book: "Adventures of Huckleberry Finn",
+      author: "Mark Twain",
+      text: "You don't know about me without you have read a book by the name of The Adventures of Tom Sawyer; but that ain't no matter. That book was made by Mr. Mark Twain, and he told the truth, mainly. There was things which he stretched, but mainly he told the truth.",
+      url: "https://www.gutenberg.org/ebooks/76"
+    },
+    {
+      book: "The Scarlet Letter",
+      author: "Nathaniel Hawthorne",
+      text: "This rose-bush, by a strange chance, has been kept alive in history; but whether it had merely survived out of the stern old wilderness, so long after the fall of the gigantic pines and oaks that originally overshadowed it, or whether, as there is fair authority for believing, it had sprung up under the footsteps of the sainted Ann Hutchinson, we shall not take upon us to determine.",
+      url: "https://www.gutenberg.org/ebooks/25344"
+    },
+    {
+      book: "The Great Gatsby",
+      author: "F. Scott Fitzgerald",
+      text: "In my younger and more vulnerable years my father gave me some advice that I've been turning over in my mind ever since. \"Whenever you feel like criticizing any one,\" he told me, \"just remember that all the people in this world haven't had the advantages that you've had.\"",
+      url: "https://www.gutenberg.org/ebooks/64317"
+    },
+    {
+      book: "Little Women",
+      author: "Louisa May Alcott",
+      text: "\"Christmas won't be Christmas without any presents,\" grumbled Jo, lying on the rug. \"It's so dreadful to be poor!\" sighed Meg, looking down at her old dress. \"I don't think it's fair for some girls to have plenty of pretty things, and other girls nothing at all,\" added little Amy, with an injured sniff.",
+      url: "https://www.gutenberg.org/ebooks/514"
+    },
+    {
+      book: "The Call of the Wild",
+      author: "Jack London",
+      text: "Buck did not read the newspapers, or he would have known that trouble was brewing, not alone for himself, but for every tide-water dog, strong of muscle and with warm, long hair, from Puget Sound to San Diego. Because men, groping in the Arctic darkness, had found a yellow metal, and because steamship and transportation companies were booming the find, thousands of men were rushing into the Northland.",
+      url: "https://www.gutenberg.org/ebooks/215"
+    },
+    {
+      book: "The Tell-Tale Heart",
+      author: "Edgar Allan Poe",
+      text: "TRUE!—nervous—very, very dreadfully nervous I had been and am; but why will you say that I am mad? The disease had sharpened my senses—not destroyed—not dulled them. Above all was the sense of hearing acute. I heard all things in the heaven and in the earth. I heard many things in hell.",
+      url: "https://www.gutenberg.org/ebooks/2148"
+    },
+    {
+      book: "Walden",
+      author: "Henry David Thoreau",
+      text: "I went to the woods because I wished to live deliberately, to front only the essential facts of life, and see if I could not learn what it had to teach, and not, when I came to die, discover that I had not lived. I did not wish to live what was not life, living is so dear; nor did I wish to practise resignation, unless it was quite necessary.",
+      url: "https://www.gutenberg.org/ebooks/205"
+    },
+    {
+      book: "The Red Badge of Courage",
+      author: "Stephen Crane",
+      text: "The cold passed reluctantly from the earth, and the retiring fogs revealed an army stretched out on the hills, resting. As the landscape changed from brown to green, the army awakened, and began to tremble with eagerness at the noise of rumors. It cast its eyes upon the roads, which were growing from long troughs of liquid mud to proper thoroughfares.",
+      url: "https://www.gutenberg.org/ebooks/73"
+    }
+  ];
+
+  const passageEl = document.getElementById('passage');
+  const textEl = document.getElementById('passageText');
+  const attrEl = document.getElementById('passageAttr');
+  const progressFill = document.getElementById('progressFill');
+  const pauseBtn = document.getElementById('pauseBtn');
+  const shuffleBtn = document.getElementById('shuffleBtn');
+  const keepReading = document.getElementById('keepReading');
+  const counterEl = document.getElementById('counter');
+  const paceSlider = document.getElementById('paceSlider');
+  const paceValue = document.getElementById('paceValue');
+
+  // default dwell time per passage, in ms. Adjustable live via the Pace slider (12-45s).
+  let DWELL_MS = 22000;
+  let currentIndex = -1;
+  let paused = false;
+  let timerId = null;
+  let continueCount = 0;
+
+  function pickNextIndex() {
+    if (PASSAGES.length === 1) return 0;
+    let next;
+    do {
+      next = Math.floor(Math.random() * PASSAGES.length);
+    } while (next === currentIndex);
+    return next;
   }
-];
 
-// ---- State ----------------------------------------------------------------
-let order = [];
-let idx = -1;
-let timer = null;
-let progressTimer = null;
-let playing = true;
-let keepCount = 0;
-const ADVANCE_MS = 14000; // time each paragraph "plays" before shuffling on
+  function showPassage(index) {
+    currentIndex = index;
+    const p = PASSAGES[index];
 
-const paragraphEl = document.getElementById('paragraph');
-const sourceEl = document.getElementById('source');
-const progressFill = document.getElementById('progressFill');
-const playPauseBtn = document.getElementById('playPause');
-const skipBtn = document.getElementById('skip');
-const keepLink = document.getElementById('keepLink');
-const keepReadingBtn = document.getElementById('keepReading');
-const keepCountEl = document.getElementById('keepCount');
+    passageEl.classList.remove('visible');
+    progressFill.classList.remove('animating');
+    progressFill.style.width = '0%';
 
-function shuffle(arr){
-  const a = arr.slice();
-  for(let i = a.length - 1; i > 0; i--){
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
+    window.setTimeout(() => {
+      textEl.textContent = p.text;
+      attrEl.innerHTML = '<span class="book">' + p.book + '</span> — ' + p.author;
+      keepReading.href = p.url;
+      passageEl.classList.add('visible');
+
+      // restart the progress line on the next frame so the transition fires
+      progressFill.style.transitionDuration = DWELL_MS + 'ms';
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          if (!paused) progressFill.classList.add('animating');
+        });
+      });
+    }, 250);
   }
-  return a;
-}
 
-function nextIndex(){
-  idx++;
-  if(idx >= order.length){
-    order = shuffle(PARAGRAPHS.map((_, i) => i));
-    // avoid immediate repeat of the last paragraph shown
-    idx = 0;
-  }
-  return order[idx];
-}
-
-function render(){
-  const i = nextIndex();
-  const item = PARAGRAPHS[i];
-
-  paragraphEl.classList.add('fading');
-  sourceEl.style.opacity = 0;
-
-  setTimeout(() => {
-    paragraphEl.innerHTML = '<p>' + item.text + '</p>';
-    sourceEl.innerHTML = item.title + ' — <span class="author">' + item.author + '</span>';
-    keepLink.href = item.gutenberg;
-    paragraphEl.classList.remove('fading');
-    sourceEl.style.opacity = 0.75;
-  }, 500);
-
-  resetProgress();
-}
-
-function resetProgress(){
-  clearInterval(progressTimer);
-  progressFill.style.transition = 'none';
-  progressFill.style.width = '0%';
-  void progressFill.offsetWidth; // force reflow
-  if(playing){
-    progressFill.style.transition = 'width ' + ADVANCE_MS + 'ms linear';
-    progressFill.style.width = '100%';
-  }
-}
-
-function scheduleNext(){
-  clearTimeout(timer);
-  if(playing){
-    timer = setTimeout(() => {
-      render();
+  function scheduleNext() {
+    clearTimeout(timerId);
+    if (paused) return;
+    timerId = window.setTimeout(() => {
+      showPassage(pickNextIndex());
       scheduleNext();
-    }, ADVANCE_MS);
+    }, DWELL_MS);
   }
-}
 
-function start(){
-  order = shuffle(PARAGRAPHS.map((_, i) => i));
-  idx = -1;
-  render();
-  scheduleNext();
-}
-
-playPauseBtn.addEventListener('click', () => {
-  playing = !playing;
-  playPauseBtn.textContent = playing ? 'Pause' : 'Play';
-  if(playing){
-    resetProgress();
+  function start() {
+    showPassage(pickNextIndex());
     scheduleNext();
-  } else {
-    clearTimeout(timer);
-    progressFill.style.transition = 'none';
   }
-});
 
-skipBtn.addEventListener('click', () => {
-  render();
-  if(playing) scheduleNext();
-});
+  pauseBtn.addEventListener('click', () => {
+    paused = !paused;
+    pauseBtn.textContent = paused ? 'Resume' : 'Pause';
+    if (paused) {
+      clearTimeout(timerId);
+      progressFill.classList.remove('animating');
+      // freeze the fill wherever it currently is
+      const computedWidth = getComputedStyle(progressFill).width;
+      progressFill.style.width = computedWidth;
+    } else {
+      showPassage(pickNextIndex());
+      scheduleNext();
+    }
+  });
 
-keepReadingBtn.addEventListener('click', () => {
-  keepCount++;
-  keepCountEl.textContent = keepCount;
-});
+  shuffleBtn.addEventListener('click', () => {
+    clearTimeout(timerId);
+    showPassage(pickNextIndex());
+    if (!paused) scheduleNext();
+  });
 
-start();
+  keepReading.addEventListener('click', () => {
+    continueCount += 1;
+    counterEl.textContent = 'continued: ' + continueCount;
+  });
+
+  paceSlider.addEventListener('input', () => {
+    const seconds = parseInt(paceSlider.value, 10);
+    DWELL_MS = seconds * 1000;
+    paceValue.textContent = seconds + 's';
+
+    // re-time whatever's currently in flight rather than waiting for it to
+    // catch up next cycle, so the slider feels responsive
+    if (!paused) {
+      progressFill.classList.remove('animating');
+      progressFill.style.width = '0%';
+      progressFill.style.transitionDuration = DWELL_MS + 'ms';
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          progressFill.classList.add('animating');
+        });
+      });
+      scheduleNext();
+    }
+  });
+
+  start();
 </script>
 
 </body>
